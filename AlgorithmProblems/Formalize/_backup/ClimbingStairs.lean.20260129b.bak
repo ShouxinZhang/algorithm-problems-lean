@@ -1,0 +1,67 @@
+/-
+Copyright (c) 2026. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Wudizhe001
+-/
+import Mathlib
+
+/-!
+# Climbing Stairs Problem
+
+There are `n` steps. Each move climbs either 1 or 2 steps.
+The goal is to count the number of distinct ways to reach step `n`.
+
+This file formalizes the problem statement and the claim that the
+recursive algorithm converges to the optimal (correct) count.
+-/
+
+namespace ClimbingStairs
+
+/-- A single move: climb 1 or 2 steps. -/
+inductive Step where
+  | one : Step
+  | two : Step
+  deriving DecidableEq, Repr
+
+/-- Numeric value of a move. -/
+def stepValue : Step → ℕ
+  | Step.one => 1
+  | Step.two => 2
+
+/-- Total steps climbed by a path. -/
+def pathSum (p : List Step) : ℕ :=
+  (p.map stepValue).sum
+
+/-- A path is valid for `n` if its total sum is `n`. -/
+def isValidPath (n : ℕ) (p : List Step) : Prop :=
+  pathSum p = n
+
+/-- Extend all paths by a leading step. -/
+def extend (s : Step) (ps : Finset (List Step)) : Finset (List Step) :=
+  ps.image (fun p => s :: p)
+
+/-- Specification: the set of all valid paths that sum to `n`. -/
+def paths (n : ℕ) : Set (List Step) :=
+  {p : List Step | isValidPath n p}
+
+/-- Finite enumeration of all valid paths (used for counting). -/
+noncomputable def pathsFinset : ℕ → Finset (List Step)
+  | 0 => {[]}
+  | 1 => {[Step.one]}
+  | n + 2 => extend Step.one (pathsFinset (n + 1)) ∪ extend Step.two (pathsFinset n)
+
+/-- The optimal (correct) number of ways is the cardinality of all valid paths. -/
+noncomputable def optimalWays (n : ℕ) : ℕ :=
+  (pathsFinset n).card
+
+/-- The recursive algorithm for counting ways. -/
+def waysAlg : ℕ → ℕ
+  | 0 => 1
+  | 1 => 1
+  | n + 2 => waysAlg (n + 1) + waysAlg n
+
+/-- The recursive algorithm converges to the optimal answer. -/
+theorem waysAlg_eq_optimalWays (n : ℕ) :
+    waysAlg n = optimalWays n := sorry
+
+end ClimbingStairs

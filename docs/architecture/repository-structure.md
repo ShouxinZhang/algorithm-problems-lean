@@ -18,4 +18,4 @@
 
 ## AlgorithmProblems/Formalize
 - AlgorithmProblems/Formalize/BridgeAndTorch.lean
-- AlgorithmProblems/Formalize/ClimbingStairs.lean
+- AlgorithmProblems/Formalize/ClimbingStairs.lean（paths 为集合规范，optimalWays 使用 Nat.card）

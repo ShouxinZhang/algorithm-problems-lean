@@ -1,11 +1,9 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Algorithm Problems Lean
+Authors: Wudizhe001
 -/
-import Mathlib.Data.List.Sort
-import Mathlib.Data.List.MinMax
-import Mathlib.Tactic
+import Mathlib
 
 /-!
 # Bridge and Torch Problem

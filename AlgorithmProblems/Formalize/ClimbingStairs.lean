@@ -1,11 +1,9 @@
 /-
 Copyright (c) 2026. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Algorithm Problems Lean
+Authors: Wudizhe001
 -/
-import Mathlib.Data.List.Basic
-import Mathlib.Data.Finset.Basic
-import Mathlib.Tactic
+import Mathlib
 
 /-!
 # Climbing Stairs Problem
@@ -30,28 +28,6 @@ def stepValue : Step → ℕ
   | Step.one => 1
   | Step.two => 2
 
-/-- Total steps climbed by a path. -/
-def pathSum (p : List Step) : ℕ :=
-  (p.map stepValue).sum
-
-/-- A path is valid for `n` if its total sum is `n`. -/
-def isValidPath (n : ℕ) (p : List Step) : Prop :=
-  pathSum p = n
-
-/-- Extend all paths by a leading step. -/
-def extend (s : Step) (ps : Finset (List Step)) : Finset (List Step) :=
-  ps.image (fun p => s :: p)
-
-/-- Specification: the set of all valid paths that sum to `n`. -/
-noncomputable def paths : ℕ → Finset (List Step)
-  | 0 => {[]}
-  | 1 => {[Step.one]}
-  | n + 2 => extend Step.one (paths (n + 1)) ∪ extend Step.two (paths n)
-
-/-- The optimal (correct) number of ways is the cardinality of all valid paths. -/
-noncomputable def optimalWays (n : ℕ) : ℕ :=
-  (paths n).card
-
 /-- The recursive algorithm for counting ways. -/
 def waysAlg : ℕ → ℕ
   | 0 => 1
@@ -60,6 +36,8 @@ def waysAlg : ℕ → ℕ
 
 /-- The recursive algorithm converges to the optimal answer. -/
 theorem waysAlg_eq_optimalWays (n : ℕ) :
-    waysAlg n = optimalWays n := sorry
+    waysAlg n = Nat.card {p : List Step // (p.map stepValue).sum = n} := by
+
+  sorry
 
 end ClimbingStairs
