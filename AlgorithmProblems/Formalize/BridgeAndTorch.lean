@@ -8,77 +8,79 @@ import Mathlib
 /-!
 # Bridge and Torch Problem
 
-Given `n` people who need to cross a bridge at night with a single torch:
-- At most 2 people can cross at once
-- Crossing time for a pair is the maximum of their individual times
-- The torch must be carried back for others to cross
+There are `n` people who need to cross a bridge at night.
+They have one torch.
+- The bridge supports at most two people at once.
+- Any group crossing must carry the torch.
+- The time taken for a group is the maximum of their individual times.
+- The torch must be carried back if there are people left to cross.
 
-Goal: Find the minimum total time for everyone to cross.
-
-## Main definitions
-
-* `minCrossingTime`: The minimum time for `n` people (with sorted times) to cross
-
-## Main results
-
-* `minCrossingTime_eq_optimalTime`: The optimal time follows a specific recurrence relation
+Given a list of crossing times, find the minimum total time required.
 -/
 
 namespace BridgeAndTorch
 
-/-- The minimum crossing time for a sorted list of crossing times (ascending).
-    f(0) = 0, f(1) = t₁, f(2) = t₂, f(3) = t₁ + t₂ + t₃
-    f(n) = min(f(n-1) + t₁ + tₙ, f(n-2) + t₁ + 2t₂ + tₙ) for n ≥ 4 -/
-noncomputable def minCrossingTime : List ℕ → ℕ
-  | [] => 0
-  | [a] => a
-  | [_, b] => b
-  | [a, b, c] => a + b + c
-  | a :: b :: c :: d :: rest =>
-    let times := a :: b :: c :: d :: rest
-    let tₙ := times.getLast!
-    let strategy1 := minCrossingTime times.dropLast + a + tₙ
-    let strategy2 := minCrossingTime times.dropLast.dropLast + a + 2 * b + tₙ
-    min strategy1 strategy2
-termination_by l => l.length
+open Multiset
 
-/-- A crossing schedule is a sequence of moves (forward crossings and returns). -/
-inductive Move (n : ℕ) where
-  | forward : Fin n → Option (Fin n) → Move n  -- one or two people cross forward
-  | back : Fin n → Move n                       -- one person returns with torch
+/-- State of the crossing: people on the left side and torch position.
+    true = Torch on Left, false = Torch on Right. -/
+structure State where
+  left : Multiset ℕ
+  torchOnLeft : Bool
+deriving DecidableEq
 
-/-- A valid schedule gets everyone across. -/
-def isValidSchedule (times : Fin n → ℕ) (moves : List (Move n)) : Prop := sorry
+/-- Valid moves in the state space.
+    `total` is required to determine who is on the right side for return trips. -/
+inductive Move (total : Multiset ℕ) : State → State → ℕ → Prop
+  | cross (s : Multiset ℕ) (l : Multiset ℕ) :
+      s ≤ l → s.card ∈ ({1, 2} : Set ℕ) →
+      Move total ⟨l, true⟩ ⟨l - s, false⟩ (s.fold max 0)
+  | back (s : Multiset ℕ) (l : Multiset ℕ) :
+      s ≤ total - l → s.card ∈ ({1, 2} : Set ℕ) →
+      Move total ⟨l, false⟩ ⟨l + s, true⟩ (s.fold max 0)
 
-/-- The total time of a schedule. -/
-def scheduleTime (times : Fin n → ℕ) (moves : List (Move n)) : ℕ := sorry
+/-- Reachability predicate tracking accumulated cost. -/
+inductive Reachable (total : Multiset ℕ) : State → ℕ → Prop
+  | start : Reachable total ⟨total, true⟩ 0
+  | step {s₁ s₂ c dc} :
+      Reachable total s₁ c →
+      Move total s₁ s₂ dc →
+      Reachable total s₂ (c + dc)
 
-/-- The optimal crossing time is the minimum over all valid schedules. -/
-noncomputable def optimalTime (times : Fin n → ℕ) : ℕ :=
-  sInf { t | ∃ moves, isValidSchedule times moves ∧ scheduleTime times moves = t }
+/-- The optimal time is the minimum cost to move everyone to the right (left set empty). -/
+noncomputable def minCrossingTime (people : Multiset ℕ) : ℕ :=
+  sInf {c | Reachable people ⟨0, false⟩ c}
 
-/-! ## Main Theorems -/
+/--
+The standard recursive solution for the problem.
+Assumes the input list is sorted and handles the two smallest times `t1, t2`
+to ferry the largest times `tn, tn-1`.
+-/
+def greedyAlgo (people : List ℕ) : ℕ :=
+  let l := people.mergeSort (·≤·)
+  let n := l.length
+  let t1 := l.getD 0 0
+  let t2 := l.getD 1 0
+  let rec solve : ℕ → ℕ
+    | 0 => 0
+    | 1 => t1
+    | 2 => t2
+    | 3 => t1 + t2 + l.getD 2 0
+    | k + 4 =>
+      let tn := l.getD (k + 3) 0
+      -- Strategy 1: t1 escorts tn
+      let strat1 := solve (k + 3) + t1 + tn
+      -- Strategy 2: t1, t2 escort tn, tn-1
+      let strat2 := solve (k + 2) + t1 + 2 * t2 + tn
+      min strat1 strat2
+  termination_by solve k => k
+  decreasing_by
+    simp_wf
+  solve n
 
-/-- For sorted times, our formula gives the optimal crossing time. -/
-theorem minCrossingTime_eq_optimalTime (times : List ℕ) (hsorted : times.SortedLE) :
-    minCrossingTime times = optimalTime (fun i => times.get i) := sorry
-
-/-- The classic instance: 4 people with times [1, 2, 5, 10] need 17 minutes. -/
-theorem classic_example : minCrossingTime [1, 2, 5, 10] = 17 := sorry
-
-/-- Strategy 1 is optimal when t₁ + tₙ₋₁ < 2·t₂ -/
-theorem strategy1_optimal {times : List ℕ} (hsorted : times.SortedLE)
-    (h : times.length ≥ 4)
-    (hcond : times[0]! + times[times.length - 2]! < 2 * times[1]!) :
-    minCrossingTime times =
-      minCrossingTime times.dropLast + times[0]! + times.getLast! := sorry
-
-/-- Strategy 2 is optimal when t₁ + tₙ₋₁ ≥ 2·t₂ -/
-theorem strategy2_optimal {times : List ℕ} (hsorted : times.SortedLE)
-    (h : times.length ≥ 4)
-    (hcond : times[0]! + times[times.length - 2]! ≥ 2 * times[1]!) :
-    minCrossingTime times =
-      minCrossingTime (times.dropLast.dropLast) +
-      times[0]! + 2 * times[1]! + times.getLast! := sorry
+/-- The greedy algorithm computes the minimum crossing time. -/
+theorem greedyAlgo_eq_minCrossingTime (people : List ℕ) :
+    greedyAlgo people = minCrossingTime people := by
+  sorry
 
 end BridgeAndTorch
