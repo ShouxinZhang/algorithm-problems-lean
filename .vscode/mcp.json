@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "lean-lsp": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["lean-lsp-mcp"],
+      "env": {
+        "LEAN_PROJECT_PATH": "/home/wudizhe001/Documents/GitHub/algorithm-probelms-lean",
+        "LEAN_LOG_LEVEL": "NONE"
+      }
+    }
+  }
+}
