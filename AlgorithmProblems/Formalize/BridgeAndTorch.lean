@@ -73,9 +73,8 @@ def greedyAlgo (people : List ℕ) : ℕ :=
       -- Strategy 2: t1, t2 escort tn, tn-1
       let strat2 := solve (k + 2) + t1 + 2 * t2 + tn
       min strat1 strat2
-  termination_by solve k => k
-  decreasing_by
-    simp_wf
+  termination_by k => k
+  decreasing_by all_goals omega
   solve n
 
 /-- The greedy algorithm computes the minimum crossing time. -/
