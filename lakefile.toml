@@ -1,0 +1,13 @@
+name = "AlgorithmProblems"
+version = "0.1.0"
+keywords = ["algorithms", "combinatorics", "formal-verification", "lean4"]
+description = "Formal verification of algorithms and combinatorial problems in Lean 4"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+branch = "master"
+
+[[lean_lib]]
+name = "AlgorithmProblems"
+roots = ["AlgorithmProblems"]
